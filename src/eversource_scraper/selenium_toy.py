@@ -74,6 +74,7 @@ def _find_addresses(driver, wait):
     """Find addresses for current biliing account"""
     try:
         address_button = wait.until(EC.element_to_be_clickable((By.ID, "SelectButton3")))
+        # Have to use unprimed _get_dropdown due to current scope
         address_dropdown = _get_dropdown("SelectButton3", driver)
         address_button.click()
         addresses_raw = address_dropdown.text
