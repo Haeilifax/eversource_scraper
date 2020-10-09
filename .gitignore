@@ -117,3 +117,5 @@ release_demo.py
 useful.py
 exe_testing/
 old/
+.vscode
+poetry.lock

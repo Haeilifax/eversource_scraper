@@ -13,10 +13,9 @@ import dotenv
 
 class GoToExcept(Exception):
     """Exception for breaking try-except blocks"""
-    pass
 
 
-def configure_settings():
+def _configure_settings():
     """Configure settings based on .env"""
     dotenv.load_dotenv()
     config = {
@@ -66,7 +65,7 @@ def _scrape_table(driver):
         table = driver.find_element_by_tag_name("table")
         return table.text.split("\n")[2:]
     except selexcept.NoSuchElementException:
-        print("table not found")
+        # print("table not found")
         return ""
 
 
@@ -87,15 +86,29 @@ def _find_addresses(driver, wait):
     return addresses
 
 
-def output(info):
+def output(data):
     """Generic output method --- Change for production"""
-    for k,v in info.items():
-        print(f"Key: {k}, Value: {v}\n___________\n")
+    ## Txt output:
+    # for k,v in info.items():
+    #     print(f"Key: {k}, Value: {v}\n___________\n")
+
+    ## Csv output:
+    for account, address in data.items():
+        for name, info in address.items():
+            if info:
+                unit_name = f"{account};{name}\n"
+                records = map(lambda x: x.split(), info)
+                with open("utilities.csv", "a") as f:
+                    f.write(unit_name)
+                    for record in records:
+                        result = f",{','.join(record)}\n"
+                        f.write(result)
 
 
-def main():
+def main(config=None):
     """Main"""
-    config = configure_settings()
+    if not config:
+        config = _configure_settings()
     USERNAME = config.get("username")
     PASSWORD = config.get("password")
     LOGIN_SITE = config.get("login_url")
@@ -140,14 +153,18 @@ def main():
         addresses = find_addresses()
         if not addresses:
             # Ensure that account_data is nested at the same level throughout
-            account_data[account].update({account: scrape_table()})
+            try:
+                address = driver.find_element_by_css_selector("[for=serviceAccountddl]").text
+            except selexcept.NoSuchElementException:
+                address = "No address"
+            account_data[account].update({address: scrape_table()})
         else:
             address_button = driver.find_element_by_id("SelectButton3")
             for address in addresses:
-                # Breaks for addresses with the same name
+                # Does not accurately record for addresses with the same name
                 address_button, menu_button = access_address_page(address, address_button)
                 account_data[account].update({address: scrape_table()})
-        print("______________\n", account_data)
+    driver.quit()
     return account_data
 
 
