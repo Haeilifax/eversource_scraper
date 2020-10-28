@@ -32,7 +32,7 @@ def clean(data):
                 records = map(lambda x: x.split(), info)
                 for record in records:
                     record_data = {}
-                    start_date = datetime.datetime.strptime(record[0], "%m/%d/%Y")
+                    start_date = datetime.datetime.strptime(record[0], "%m/%d/%Y").date()
                     record_data["start_date"] = start_date
                     record_data["end_date"] = start_date + timedelta(int(record[2]))
                     record_data["_usage"] = record[1]
@@ -55,14 +55,20 @@ def insert_data(clean_data, config):
         "VALUES "
         "(%(unit_name)s, %(start_date)s, %(end_date)s, %(_usage)s, %(charge)s, %(avg_temp)s)"
         )
+        recent_record_sql = "SELECT max(start_date) FROM data WHERE unit_name=%s"
         check_sql = "SELECT unit_name FROM unit_name_map WHERE unit_name=%s"
         unit_name_sql = "INSERT INTO unit_name_map (unit_name) VALUES (%s)"
         print("Inserting data...")
         with conn.cursor() as cur:
             for unit_name, records in clean_data.items():
+                cur.execute(recent_record_sql, (unit_name,))
+                latest_record = cur.fetchall()[0][0] or datetime.date(1970,1,1)
                 for record in records:
                     try:
-                        cur.execute(data_insert_sql, {"unit_name": unit_name, **record})
+                        if latest_record < record["start_date"]:
+                            cur.execute(data_insert_sql, {"unit_name": unit_name, **record})
+                        else:
+                            continue
                     except Exception as e:
                         # TODO: make a polite log instead of print
                         print(f"Error encountered on unit {unit_name}, "
