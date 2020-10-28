@@ -7,6 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
 from selenium.common import exceptions as selexcept
 import dotenv
 
@@ -109,11 +110,12 @@ def main(config=None):
     PASSWORD = config.get("password")
     LOGIN_SITE = config.get("login_url")
 
-    driver = webdriver.Firefox()
+    options = Options()
+    options.add_argument('-headless')
+    driver = webdriver.Firefox(options=options)
     wait = WebDriverWait(driver, 10)
 
     # Make functions easier to use by priming values
-    # selected = partial(_selected, driver=driver)
     access_page = partial(_access_page, driver=driver, wait=wait)
     access_address_page = partial(_access_address_page, driver=driver, wait=wait)
     get_dropdown = partial(_get_dropdown, driver=driver)
@@ -121,6 +123,7 @@ def main(config=None):
     find_addresses = partial(_find_addresses, driver=driver, wait=wait)
 
     # Login to Eversource
+    print(f"Logging in to {LOGIN_SITE}")
     driver.get(LOGIN_SITE)
     username_box = driver.find_element_by_id("WebId")
     password_box = driver.find_element_by_id("Password")
@@ -130,6 +133,7 @@ def main(config=None):
     password_box.send_keys(PASSWORD)
     # Selenium submit function throws error -- going old fashioned
     submit_button.click()
+    print('Logged in, accessing account history...')
 
     wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "My Account"))).click()
     wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "View Usage"))).click()
@@ -144,6 +148,7 @@ def main(config=None):
     account_data = {}
 
     for account in billing_accounts:
+        print(f"Getting data for {account}")
         account_data[account] = {}
         menu_button = access_page(account, menu_button)
         addresses = find_addresses()
@@ -154,13 +159,17 @@ def main(config=None):
             except selexcept.NoSuchElementException:
                 address = "No address"
             account_data[account].update({address: scrape_table()})
+            print ("    data:", account_data[account][address] or None)
         else:
             address_button = driver.find_element_by_id("SelectButton3")
             for address in addresses:
+                print(f"Getting data for {account} at address {address}")
                 # Does not accurately record for addresses with the same name
                 address_button, menu_button = access_address_page(address, address_button)
                 account_data[account].update({address: scrape_table()})
+                print ("    data:", account_data[account][address] or None)
     driver.quit()
+    print("Finished getting account history")
     return account_data
 
 
