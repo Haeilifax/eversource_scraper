@@ -23,12 +23,6 @@ def _configure_settings():
     return config
 
 
-def _selected(driver):
-    """Find which accounts are currently selected"""
-    selected_account = driver.find_element_by_css_selector("[data-id=Accountddl1]")
-    return selected_account.title
-
-
 def _access_page(account, menu_button, driver, wait):
     """Access a specified billing account through dropdown menu"""
     menu_button.click()
@@ -111,6 +105,7 @@ def main(config=None):
     LOGIN_SITE = config.get("login_url")
 
     options = Options()
+    # Add ability for non-headless mode through config?
     options.add_argument('-headless')
     driver = webdriver.Firefox(options=options)
     wait = WebDriverWait(driver, 10)
