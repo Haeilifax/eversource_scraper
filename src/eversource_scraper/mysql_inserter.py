@@ -36,6 +36,7 @@ def clean(data):
                     record_data["start_date"] = start_date
                     record_data["end_date"] = start_date + timedelta(int(record[2]))
                     record_data["_usage"] = record[1]
+                    # This (below) will cause an error someday
                     record_data["charge"] = record[5][1:]
                     record_data["avg_temp"] = record[6]
                     unit_data.append(record_data)
