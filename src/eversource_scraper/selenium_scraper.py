@@ -11,10 +11,6 @@ from selenium.common import exceptions as selexcept
 import dotenv
 
 
-class GoToExcept(Exception):
-    """Exception for breaking try-except blocks"""
-
-
 def _configure_settings():
     """Configure settings based on .env"""
     dotenv.load_dotenv()
@@ -80,8 +76,8 @@ def _find_addresses(driver, wait):
         addresses = addresses_raw.split("\n")
         address_button.click()
         if addresses[0] == "13 months":
-            raise GoToExcept("Not a list of addresses")
-    except (selexcept.NoSuchElementException, GoToExcept):
+            addresses = []
+    except selexcept.NoSuchElementException:
         addresses = []
     return addresses
 
