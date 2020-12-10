@@ -12,6 +12,20 @@ from selenium.common import exceptions as selexcept
 import dotenv
 
 
+class element_to_be_clickable_and_page_refreshed(object):
+    """Expectation that the page has changed and the element now clickable"""
+    def __init__(self, locator, html_tag):
+        self.html_tag = html_tag
+        self.locator = locator
+        self.stale = False
+
+    def __call__(self, driver):
+        self.stale = EC.staleness_of(self.html_tag)
+        if self.stale:
+            return EC.element_to_be_clickable(self.locator)(driver)
+        return False
+
+
 def _configure_settings():
     """Configure settings based on .env"""
     dotenv.load_dotenv()
@@ -39,7 +53,7 @@ def _access_address_page(address, address_button, driver, wait):
     # Have to use unprimed _get_dropdown due to current scope
     address_dropdown = _get_dropdown("SelectButton3", driver)
     address_dropdown.find_element_by_link_text(address).click()
-    menu_button = wait.until(EC.element_to_be_clickable((By.ID, "SelectButton2")))
+    menu_button = wait.until(element_to_be_clickable_and_page_refreshed((By.ID, "SelectButton2"), driver.find_element_by_tag_name('html')))
     address_button = driver.find_element_by_id("SelectButton3")
     return address_button, menu_button
 
@@ -130,8 +144,8 @@ def main(config=None):
     submit_button.click()
     print('Logged in, accessing account history...')
 
-    wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "My Account"))).click()
-    wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "View Usage"))).click()
+    wait.until(EC.staleness_of(driver.find_element_by_tag_name('html')))
+    driver.get('https://www.eversource.com/cg/customer/usagehistory')
 
     # Get full list of accounts
     menu_button = wait.until(EC.element_to_be_clickable((By.ID, "SelectButton2")))
